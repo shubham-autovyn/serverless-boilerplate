@@ -1,0 +1,74 @@
+
+service: serverless-boilerplate-extended
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    TABLE_NAME: ${self:service}-table-${self:provider.stage}
+    BUCKET_NAME: ${self:service}-bucket-${self:provider.stage}
+    SQS_QUEUE_URL: { "Ref": "AppQueue" }
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  webpack:
+    packager: 'npm'
+    includeModules: true
+  common: ${file(./cloud-config/${self:provider.stage}/common-config.json)}
+  service: ${file(./cloud-config/${self:provider.stage}/${self:service}-config.json)}
+
+functions:
+  hello:
+    handler: src/handler/hello.main
+    events:
+      - http:
+          path: hello
+          method: get
+
+  # createUser:
+  #   handler: src/handler/user.createUser
+  #   events:
+  #     - http:
+  #         path: users
+  #         method: post
+
+# resources:
+#   Resources:
+#     AppTable:
+#       Type: AWS::DynamoDB::Table
+#       Properties:
+#         TableName: ${self:provider.environment.TABLE_NAME}
+#         AttributeDefinitions:
+#           - AttributeName: id
+#             AttributeType: S
+#         KeySchema:
+#           - AttributeName: id
+#             KeyType: HASH
+#         BillingMode: PAY_PER_REQUEST
+
+#     AppBucket:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: ${self:provider.environment.BUCKET_NAME}
+
+#     AppQueue:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         QueueName: ${self:service}-queue-${self:provider.stage}
+
+#     AppQueuePolicy:
+#       Type: AWS::SQS::QueuePolicy
+#       Properties:
+#         Queues:
+#           - Ref: AppQueue
+#         PolicyDocument:
+#           Version: '2012-10-17'
+#           Statement:
+#             - Effect: Allow
+#               Principal: '*'
+#               Action: 'SQS:SendMessage'
+#               Resource: '*'
